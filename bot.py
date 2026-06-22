@@ -8,7 +8,7 @@ import logging
 import json
 import os
 import re
-import aiohttp
+import httpx
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telegram.ext import (
@@ -56,8 +56,8 @@ async def ask_claude(system_prompt: str, user_message: str, history: list = None
             messages.append(h)
     messages.append({"role": "user", "content": user_message})
 
-    async with aiohttp.ClientSession() as session:
-        resp = await session.post(
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={
                 "Content-Type": "application/json",
@@ -71,7 +71,7 @@ async def ask_claude(system_prompt: str, user_message: str, history: list = None
                 "messages": messages
             }
         )
-        result = await resp.json()
+        result = resp.json()
         if "content" in result:
             return result["content"][0]["text"]
         logger.error(f"API error: {result}")
@@ -115,8 +115,8 @@ Qoidalar:
 async def read_receipt_image(file_bytes: bytes) -> str:
     import base64
     b64 = base64.b64encode(file_bytes).decode("utf-8")
-    async with aiohttp.ClientSession() as session:
-        resp = await session.post(
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={
                 "Content-Type": "application/json",
@@ -139,7 +139,7 @@ async def read_receipt_image(file_bytes: bytes) -> str:
                 }]
             }
         )
-        result = await resp.json()
+        result = resp.json()
         if "content" in result:
             return result["content"][0]["text"]
         return None
