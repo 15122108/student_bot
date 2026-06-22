@@ -4,6 +4,7 @@ Har bir ish = 5000 so'm (balansdan yechiladi)
 To'lov: Kartaga o'tkazma + chek + Admin tasdiqlaydi
 """
 
+import asyncio
 import logging
 import json
 import os
@@ -867,11 +868,6 @@ async def _setup_bot_commands(app):
         logger.warning("WEBAPP_URL sozlanmagan — Menu Button standart holatda qoladi (faqat buyruqlar ro'yxati).")
 
 def main():
-    # ── Render Web Service uchun: portni tinglaydigan mini HTTP server ──
-    # Bu Render'ga "xizmat tirik" signalini beradi, aks holda Render xizmatni
-    # ishga tushmadi deb hisoblashi yoki "uxlatib" qo'yishi mumkin.
-    _start_keepalive_server()
-
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("menu", start))
@@ -891,51 +887,55 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webapp_data_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
     app.post_init = _setup_bot_commands
+    app.post_init = _post_init
     print("🚀 Talaba AI Bot (PPTX + balans tizimi) ishga tushdi!")
     app.run_polling(drop_pending_updates=True)
 
-def _start_keepalive_server():
-    """Render Web Service portni 'tinglashini' kutadi — shu kichik server shart bajaradi.
-    Shu bilan birga, agar RENDER_EXTERNAL_URL mavjud bo'lsa, bot o'zini-o'zi
-    har necha daqiqada 'pinglab', Render'ning bepul tarifda uxlab qolishining
-    oldini olishga harakat qiladi (faqat trafik mavjud paytda foydali — to'liq
-    kafolat bermaydi, eng ishonchli yo'l tashqi UptimeRobot kabi xizmat)."""
-    import threading
-    from http.server import BaseHTTPRequestHandler, HTTPServer
-
-    class _PingHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.end_headers()
-            self.wfile.write("Bot ishlamoqda ✅".encode("utf-8"))
-
-        def log_message(self, format, *args):
-            pass  # Konsolni keraksiz log bilan to'ldirmaslik uchun
-
-    port = int(os.environ.get("PORT", "10000"))
-
-    def _run_server():
-        server = HTTPServer(("0.0.0.0", port), _PingHandler)
-        server.serve_forever()
-
-    threading.Thread(target=_run_server, daemon=True).start()
-    logger.info(f"Keep-alive HTTP server {port}-portda ishga tushdi.")
-
-    # O'zini-o'zi pinglash (Render shu xizmat manzilini bersa)
+async def _post_init(app):
+    """Bot ishga tushgandan keyin chaqiriladi — buyruqlar va keepalive server shu yerda sozlanadi."""
+    await _setup_bot_commands(app)
+    asyncio.create_task(_keepalive_server())
     external_url = os.environ.get("RENDER_EXTERNAL_URL")
     if external_url:
-        def _self_ping_loop():
-            import time
-            import urllib.request
-            while True:
-                time.sleep(600)  # har 10 daqiqada
-                try:
-                    urllib.request.urlopen(external_url, timeout=10)
-                    logger.info("Self-ping yuborildi (uyg'oq turish uchun).")
-                except Exception as e:
-                    logger.warning(f"Self-ping xato: {e}")
-        threading.Thread(target=_self_ping_loop, daemon=True).start()
+        asyncio.create_task(_self_ping(external_url))
+
+async def _keepalive_server():
+    """Render Web Service portini tinglaydigan async HTTP server — 'tirik' signali beradi."""
+    import asyncio
+    port = int(os.environ.get("PORT", "10000"))
+
+    async def _handler(reader, writer):
+        try:
+            await reader.read(1024)
+        except Exception:
+            pass
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain; charset=utf-8\r\n"
+            "Content-Length: 22\r\n"
+            "\r\n"
+            "Bot ishlamoqda \u2705"
+        )
+        writer.write(response.encode("utf-8"))
+        await writer.drain()
+        writer.close()
+
+    server = await asyncio.start_server(_handler, "0.0.0.0", port)
+    logger.info(f"Keep-alive server {port}-portda ishga tushdi.")
+    async with server:
+        await server.serve_forever()
+
+async def _self_ping(url: str):
+    """Render'ning bepul tarifda uxlab qolmaslik uchun har 10 daqiqada o'zini pinglaydi."""
+    await asyncio.sleep(60)
+    while True:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                await client.get(url)
+            logger.info("Self-ping yuborildi.")
+        except Exception as e:
+            logger.warning(f"Self-ping xato: {e}")
+        await asyncio.sleep(600)
 
 if __name__ == "__main__":
     main()
