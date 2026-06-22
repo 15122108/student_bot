@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Talaba AI — Buyurtma</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --ink: #16181C;
+    --ink-soft: #5B6168;
+    --paper: #FAF9F6;
+    --panel: #FFFFFF;
+    --line: #E7E4DD;
+    --brand: #2C5F2D;
+    --brand-soft: #DCEBDD;
+    --brand-deep: #1C4A1E;
+    --accent: #C97A3D;
+    --accent-soft: #F3E2D2;
+    --danger: #B3261E;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overscroll-behavior-y: none;
+  }
+  body { padding-bottom: 110px; }
+
+  /* ── Header ───────────────────────── */
+  .hero {
+    padding: 22px 20px 26px;
+    background: var(--brand);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: -40px; top: -50px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    right: 40px; bottom: -60px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .hero-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    font-weight: 600;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  .hero-title {
+    font-size: 23px;
+    font-weight: 800;
+    line-height: 1.25;
+    margin: 0;
+    position: relative;
+    max-width: 86%;
+  }
+  .hero-balance {
+    margin-top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.14);
+    border-radius: 999px;
+    padding: 7px 14px 7px 7px;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+  }
+  .hero-balance .coin {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+
+  /* ── Service grid ─────────────────── */
+  .section {
+    padding: 18px 16px 4px;
+  }
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 4px 10px;
+  }
+  .service-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .service-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+    position: relative;
+  }
+  .service-card:active { transform: scale(0.97); }
+  .service-card.selected {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+  }
+  .service-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--brand-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    margin-bottom: 10px;
+  }
+  .service-card.selected .service-icon { background: var(--brand); }
+  .service-name {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .service-desc {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    line-height: 1.35;
+  }
+  .service-price {
+    position: absolute;
+    top: 12px; right: 12px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 3px 7px;
+    border-radius: 999px;
+  }
+
+  /* ── Form panel ───────────────────── */
+  .form-panel {
+    margin: 18px 16px 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: none;
+  }
+  .form-panel.open { display: block; animation: slideUp 0.25s ease; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .form-title {
+    font-size: 15px;
+    font-weight: 800;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+    line-height: 1.4;
+  }
+  .field-group { margin-bottom: 14px; }
+  .field-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 7px;
+    display: block;
+  }
+  textarea, input[type="text"] {
+    width: 100%;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    font-size: 14.5px;
+    font-family: inherit;
+    background: var(--paper);
+    color: var(--ink);
+    resize: none;
+  }
+  textarea:focus, input:focus {
+    outline: none;
+    border-color: var(--brand);
+  }
+  textarea { min-height: 64px; }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .chip.active {
+    border-color: var(--brand);
+    background: var(--brand);
+    color: white;
+  }
+
+  .lang-row { display: flex; gap: 8px; }
+  .lang-chip {
+    flex: 1;
+    text-align: center;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .lang-chip.active { border-color: var(--brand); background: var(--brand-soft); }
+
+  .design-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .design-swatch {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    position: relative;
+  }
+  .design-swatch.active { border-color: var(--ink); }
+  .design-swatch.active::after {
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    font-weight: 900;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  /* ── Bottom bar ───────────────────── */
+  .bottom-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: none;
+  }
+  .bottom-bar.open { display: block; }
+  .bottom-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .bottom-summary .label { color: var(--ink-soft); }
+  .bottom-summary .price { font-weight: 800; font-size: 17px; color: var(--brand-deep); }
+  .submit-btn {
+    width: 100%;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .submit-btn:active { background: var(--brand-deep); }
+  .submit-btn:disabled { background: #C9CDC9; }
+
+  .empty-note {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    padding: 18px 30px 6px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="hero-eyebrow">Talaba AI Yordamchi</div>
+    <h1 class="hero-title" id="heroTitle">Qaysi ish kerak — birga tayyorlaymiz</h1>
+    <div class="hero-balance">
+      <span class="coin">💰</span>
+      <span id="balanceText">Balans: ...</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Xizmat turini tanlang</div>
+    <div class="service-grid" id="serviceGrid"></div>
+    <div class="empty-note">Tanlangach, quyida forma ochiladi — to'ldirib, yuboring</div>
+  </div>
+
+  <div class="form-panel" id="formPanel"></div>
+
+  <div class="bottom-bar" id="bottomBar">
+    <div class="bottom-summary">
+      <span class="label" id="summaryLabel">Tanlangan xizmat</span>
+      <span class="price" id="summaryPrice">5 000 so'm</span>
+    </div>
+    <button class="submit-btn" id="submitBtn">Yaratishni boshlash 🚀</button>
+  </div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  applyTelegramTheme();
+  tg.onEvent('themeChanged', applyTelegramTheme);
+}
+
+function applyTelegramTheme() {
+  if (!tg || !tg.colorScheme) return;
+  if (tg.colorScheme === 'dark') {
+    document.documentElement.style.setProperty('--ink', '#F2F1ED');
+    document.documentElement.style.setProperty('--ink-soft', '#A8ACA6');
+    document.documentElement.style.setProperty('--paper', '#15171A');
+    document.documentElement.style.setProperty('--panel', '#1E2125');
+    document.documentElement.style.setProperty('--line', '#2C2F33');
+    document.documentElement.style.setProperty('--brand-soft', '#27392A');
+    document.documentElement.style.setProperty('--accent-soft', '#3A2E22');
+  }
+}
+
+// ── Service catalog ──────────────────────────
+const SERVICES = [
+  { id: "presentation", icon: "📊", name: "Prezentatsiya", desc: "Haqiqiy PowerPoint (.pptx)", price: 5000 },
+  { id: "essay",        icon: "📝", name: "Referat / Esse", desc: "To'liq tuzilmali matn", price: 5000 },
+  { id: "math",         icon: "🧮", name: "Masala yechish", desc: "Qadamba-qadam yechim", price: 5000 },
+  { id: "translate",    icon: "🌐", name: "Tarjima", desc: "Har qanday tilga", price: 5000 },
+  { id: "konspekt",     icon: "📋", name: "Konspekt", desc: "Qisqa va aniq xulosa", price: 5000 },
+  { id: "quiz",         icon: "🧪", name: "Test savollari", desc: "4 variant + javob", price: 5000 },
+  { id: "code",         icon: "💻", name: "Kod yozish", desc: "Izohlar bilan", price: 5000 },
+  { id: "ask",          icon: "🤖", name: "Erkin savol", desc: "Istalgan o'quv mavzusi", price: 5000 },
+];
+
+const DESIGN_COLORS = [
+  { id: "midnight",   c1: "#1E2761", c2: "#CADCFC" },
+  { id: "forest",     c1: "#2C5F2D", c2: "#97BC62" },
+  { id: "ocean",      c1: "#065A82", c2: "#8FD9E8" },
+  { id: "charcoal",   c1: "#36454F", c2: "#C8D0D6" },
+  { id: "teal",       c1: "#028090", c2: "#8FE0D6" },
+  { id: "cherry",     c1: "#990011", c2: "#F4C7C7" },
+  { id: "berry",      c1: "#6D2E46", c2: "#D9B8C4" },
+  { id: "terracotta", c1: "#B85042", c2: "#F0D9C8" },
+];
+
+let selectedService = null;
+let formState = {};
+
+function fmt(n) { return n.toLocaleString("ru-RU").replace(/,/g, " "); }
+
+// ── Render service grid ──────────────────────
+const grid = document.getElementById("serviceGrid");
+SERVICES.forEach(s => {
+  const card = document.createElement("div");
+  card.className = "service-card";
+  card.dataset.id = s.id;
+  card.innerHTML = `
+    <div class="service-price">${fmt(s.price)} so'm</div>
+    <div class="service-icon">${s.icon}</div>
+    <div class="service-name">${s.name}</div>
+    <div class="service-desc">${s.desc}</div>
+  `;
+  card.addEventListener("click", () => selectService(s.id));
+  grid.appendChild(card);
+});
+
+function selectService(id) {
+  selectedService = SERVICES.find(s => s.id === id);
+  formState = {};
+  document.querySelectorAll(".service-card").forEach(c => {
+    c.classList.toggle("selected", c.dataset.id === id);
+  });
+  renderForm();
+}
+
+// ── Render form per service ──────────────────
+function renderForm() {
+  const panel = document.getElementById("formPanel");
+  const bar = document.getElementById("bottomBar");
+  panel.classList.add("open");
+  bar.classList.add("open");
+
+  document.getElementById("summaryLabel").textContent = selectedService.name;
+  document.getElementById("summaryPrice").textContent = fmt(selectedService.price) + " so'm";
+
+  let html = `<div class="form-title">${selectedService.icon} ${selectedService.name}</div>`;
+
+  if (selectedService.id === "presentation") {
+    html += `<p class="form-sub">Mavzuni yozing, slayd sonini va dizaynni tanlang.</p>`;
+    html += fieldTextarea("topic", "Mavzu", "Masalan: Neyropedagogika");
+    html += `<div class="field-group"><span class="field-label">Slaydlar soni</span>
+      <div class="chip-row" id="slideChips"></div></div>`;
+    html += `<div class="field-group"><span class="field-label">Dizayn rangi</span>
+      <div class="design-grid" id="designGrid"></div></div>`;
+  } else if (selectedService.id === "essay") {
+    html += `<p class="form-sub">Referat yoki esse mavzusini yozing.</p>`;
+    html += fieldTextarea("topic", "Mavzu", "Masalan: Globallashuv va uning oqibatlari");
+  } else if (selectedService.id === "math") {
+    html += `<p class="form-sub">Masala yoki misolni to'liq yozing.</p>`;
+    html += fieldTextarea("topic", "Masala matni", "Masalan: 2x + 5 = 15, x = ?");
+  } else if (selectedService.id === "translate") {
+    html += `<p class="form-sub">Tarjima qilinadigan matn va kerakli tilni yozing.</p>`;
+    html += fieldTextarea("topic", "Matn va til", "Masalan: Hello world — o'zbekchaga");
+  } else if (selectedService.id === "konspekt") {
+    html += `<p class="form-sub">Konspekt tuzilishi kerak bo'lgan mavzuni yozing.</p>`;
+    html += fieldTextarea("topic", "Mavzu", "Masalan: Fotosintez jarayoni");
+  } else if (selectedService.id === "quiz") {
+    html += `<p class="form-sub">Test mavzusi va savollar sonini yozing.</p>`;
+    html += fieldTextarea("topic", "Mavzu", "Masalan: Ikkinchi jahon urushi — 10 ta test");
+  } else if (selectedService.id === "code") {
+    html += `<p class="form-sub">Qanday dastur yoki funksiya kerakligini yozing.</p>`;
+    html += fieldTextarea("topic", "Topshiriq", "Masalan: Python kalkulyator yoz");
+  } else if (selectedService.id === "ask") {
+    html += `<p class="form-sub">Istalgan o'quv savolingizni yozing.</p>`;
+    html += fieldTextarea("topic", "Savol", "Savolingizni shu yerga yozing");
+  }
+
+  html += `<div class="field-group"><span class="field-label">Til</span>
+    <div class="lang-row" id="langRow"></div></div>`;
+
+  panel.innerHTML = html;
+
+  // Wire up textarea
+  const ta = panel.querySelector("textarea");
+  if (ta) ta.addEventListener("input", e => { formState.topic = e.target.value; validate(); });
+
+  // Slide count chips (presentation only)
+  if (selectedService.id === "presentation") {
+    const slideChips = document.getElementById("slideChips");
+    [5, 8, 10, 12, 15, 20].forEach(n => {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.textContent = n + " ta";
+      chip.addEventListener("click", () => {
+        formState.slideCount = n;
+        document.querySelectorAll("#slideChips .chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        validate();
+      });
+      slideChips.appendChild(chip);
+    });
+
+    const designGrid = document.getElementById("designGrid");
+    DESIGN_COLORS.forEach(d => {
+      const sw = document.createElement("div");
+      sw.className = "design-swatch";
+      sw.style.background = `linear-gradient(135deg, ${d.c1} 55%, ${d.c2} 55%)`;
+      sw.addEventListener("click", () => {
+        formState.design = d.id;
+        document.querySelectorAll(".design-swatch").forEach(s => s.classList.remove("active"));
+        sw.classList.add("active");
+      });
+      designGrid.appendChild(sw);
+    });
+    // default selections
+    formState.slideCount = 10;
+    formState.design = "random";
+    slideChips.children[2].classList.add("active"); // 10 ta
+  }
+
+  // Language row
+  const langRow = document.getElementById("langRow");
+  [["uz", "🇺🇿 O'zbek"], ["ru", "🇷🇺 Русский"]].forEach(([code, label], i) => {
+    const chip = document.createElement("div");
+    chip.className = "lang-chip" + (i === 0 ? " active" : "");
+    chip.textContent = label;
+    chip.addEventListener("click", () => {
+      formState.lang = code;
+      document.querySelectorAll(".lang-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+    });
+    langRow.appendChild(chip);
+  });
+  formState.lang = "uz";
+
+  validate();
+  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function fieldTextarea(key, label, placeholder) {
+  return `<div class="field-group">
+    <span class="field-label">${label}</span>
+    <textarea placeholder="${placeholder}"></textarea>
+  </div>`;
+}
+
+function validate() {
+  const btn = document.getElementById("submitBtn");
+  const ok = formState.topic && formState.topic.trim().length > 2;
+  btn.disabled = !ok;
+}
+
+document.getElementById("submitBtn").addEventListener("click", () => {
+  if (!formState.topic) return;
+  const payload = {
+    service: selectedService.id,
+    topic: formState.topic.trim(),
+    lang: formState.lang || "uz",
+    slideCount: formState.slideCount || null,
+    design: formState.design || null,
+    price: selectedService.price,
+  };
+  if (tg) {
+    tg.sendData(JSON.stringify(payload));
+    tg.close();
+  } else {
+    alert("Telegram tashqarisida sinov rejimi:\n" + JSON.stringify(payload, null, 2));
+  }
+});
+
+// ── Balance fetch (passed via Telegram initData → backend) ──
+function loadBalance() {
+  const initData = tg?.initData || "";
+  if (!initData) {
+    document.getElementById("balanceText").textContent = "Balans: — (test rejimi)";
+    return;
+  }
+  fetch("/api/balance?" + new URLSearchParams({ initData }))
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("balanceText").textContent = `Balans: ${fmt(data.balance)} so'm`;
+    })
+    .catch(() => {
+      document.getElementById("balanceText").textContent = "Balans: noma'lum";
+    });
+}
+loadBalance();
+</script>
+</body>
+</html>

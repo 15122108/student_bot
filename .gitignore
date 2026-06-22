@@ -1,0 +1,6 @@
+users.json
+tmp_files/
+__pycache__/
+*.pyc
+.env
+*.zip
