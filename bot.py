@@ -867,7 +867,7 @@ async def _setup_bot_commands(app):
     else:
         logger.warning("WEBAPP_URL sozlanmagan — Menu Button standart holatda qoladi (faqat buyruqlar ro'yxati).")
 
-def main():
+async def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("menu", start))
@@ -886,13 +886,17 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, photo_handler))
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webapp_data_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
-    app.post_init = _setup_bot_commands
     app.post_init = _post_init
     print("🚀 Talaba AI Bot (PPTX + balans tizimi) ishga tushdi!")
-    app.run_polling(drop_pending_updates=True)
+    async with app:
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling(drop_pending_updates=True)
+        await asyncio.Event().wait()
+        await app.updater.stop()
+        await app.stop()
 
 async def _post_init(app):
-    """Bot ishga tushgandan keyin chaqiriladi — buyruqlar va keepalive server shu yerda sozlanadi."""
     await _setup_bot_commands(app)
     asyncio.create_task(_keepalive_server())
     external_url = os.environ.get("RENDER_EXTERNAL_URL")
@@ -900,8 +904,6 @@ async def _post_init(app):
         asyncio.create_task(_self_ping(external_url))
 
 async def _keepalive_server():
-    """Render Web Service portini tinglaydigan async HTTP server — 'tirik' signali beradi."""
-    import asyncio
     port = int(os.environ.get("PORT", "10000"))
 
     async def _handler(reader, writer):
@@ -926,7 +928,6 @@ async def _keepalive_server():
         await server.serve_forever()
 
 async def _self_ping(url: str):
-    """Render'ning bepul tarifda uxlab qolmaslik uchun har 10 daqiqada o'zini pinglaydi."""
     await asyncio.sleep(60)
     while True:
         try:
@@ -938,4 +939,4 @@ async def _self_ping(url: str):
         await asyncio.sleep(600)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
