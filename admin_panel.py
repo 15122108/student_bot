@@ -36,8 +36,8 @@ def login_required(f):
 
 # ── Telegram notify helper (sync wrapper) ──
 async def _send_telegram_message(chat_id, text):
-    import aiohttp
-    async with aiohttp.ClientSession() as s:
+    import httpx
+    async with httpx.AsyncClient(timeout=10.0) as s:
         await s.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
             json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
