@@ -888,13 +888,7 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
     app.post_init = _post_init
     print("🚀 Talaba AI Bot (PPTX + balans tizimi) ishga tushdi!")
-    async with app:
-        await app.initialize()
-        await app.start()
-        await app.updater.start_polling(drop_pending_updates=True)
-        await asyncio.Event().wait()
-        await app.updater.stop()
-        await app.stop()
+    await app.run_polling(drop_pending_updates=True)
 
 async def _post_init(app):
     await _setup_bot_commands(app)
